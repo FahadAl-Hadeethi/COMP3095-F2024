@@ -61,10 +61,10 @@ public class ProductServiceImpl implements ProductService{
 
         log.debug("Updating a product with id {}", productId);
         Query query = new Query();
-        query.addCriteria(Criteria.where(productId).is(productId));
+        query.addCriteria(Criteria.where("id").is(productId)); // Fix the Criteria where clause
         Product product = mongoTemplate.findOne(query, Product.class);
 
-        if(product != null) {
+        if (product != null) {
             product.setDescription(productRequest.description());
             product.setPrice(productRequest.price());
             product.setName(productRequest.name());
@@ -72,8 +72,8 @@ public class ProductServiceImpl implements ProductService{
         }
 
         return productId;
-
     }
+
 
     @Override
     public void deleteProduct(String productId) {

@@ -22,36 +22,31 @@ public class ProductController {
     @ResponseStatus(HttpStatus.CREATED)
     public void createProduct(@RequestBody ProductRequest productRequest) {
         productService.createProduct(productRequest);
-
-
     }
+
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts();
     }
 
-    //http://localhost:8080/api/product/
-    @PutMapping
-    //@ResponseStatus(HttpStatus.NO_CONTENT)
+    // Corrected @PutMapping to include {productId} in the URL
+    @PutMapping("/{productId}")
     public ResponseEntity<?> updateProduct(@PathVariable("productId") String productId,
                                            @RequestBody ProductRequest productRequest) {
-
         String updateProductId = productService.updateProduct(productId, productRequest);
 
-        //set the location header attribute
+        // Set the Location header attribute
         HttpHeaders headers = new HttpHeaders();
         headers.add("Location", "/api/product/" + updateProductId);
 
         return new ResponseEntity<>(headers, HttpStatus.NO_CONTENT);
-
     }
 
-    @DeleteMapping
+    // Corrected @DeleteMapping to include {productId} in the URL
+    @DeleteMapping("/{productId}")
     public ResponseEntity<?> deleteProduct(@PathVariable("productId") String productId) {
-
         productService.deleteProduct(productId);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
-
 }
