@@ -1,0 +1,86 @@
+  #  1. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d
+    # -- This command will start the containers in detached mode without rebuilding the images (if they already exist)
+
+  #  2. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d --build
+  # -- This command forces the rebuild of images, even if the images already exist, before starting the containers
+
+
+version: '3.9'
+services:
+
+  product-service:
+    image: product-service
+    container_name: product-service
+    ports:
+      - "8084:8084"
+    build:
+      context: ./product-service
+      dockerfile: ./Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_HOST: mongodb
+      SPRING_DATA_MONGODB_USERNAME: admin
+      SPRING_DATA_MONGODB_PASSWORD: password
+      SPRING_DATA_MONGODB_DATABASE: product-service
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - spring
+
+    restart: unless-stopped
+
+  mongodb:
+        image: mongo:latest
+        ports:
+          - "27017:27017"
+        environment:
+          - MONGO_INITDB_ROOT_USERNAME=admin
+          - MONGO_INITDB_ROOT_PASSWORD=password
+
+        volumes:
+          - mongodb:/data/db
+          - ./init/mongo/docker-entrypoint-initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+
+        container_name: 3095-mongodb
+        networks:
+          - spring
+
+        healthcheck:
+          test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+        restart: unless-stopped
+
+
+  mongo-express:
+          image: mongo-express
+          ports:
+            - "8081:8081" #outisde:inside #COME BACK TO THIS IF YOU HAVE A PROBLEM
+          environment:
+            - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+            - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+            - ME_CONFIG_MONGODB_SERVER=mongodb
+            - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+            - ME_CONFIG_BASICAUTH_USERNAME=admin
+            - ME_CONFIG_BASICAUTH_PASSWORD=password
+            - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
+          container_name: mongo-express
+          #restart: unless-stopped
+          depends_on:
+             mongodb:
+               condition: service_healthy
+
+          networks:
+            - spring
+
+          restart: unless-stopped
+
+volumes:
+  mongodb:
+    driver: local #use local driver to persist data on the host machine
+
+networks:
+  spring:
+    driver: bridge
