@@ -1,0 +1,64 @@
+version: '3.9'
+
+services:
+
+
+  keycloak:
+    container_name: keycloak
+    hostname: keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: [ "start-dev", "--import-realm" ] #to start in dev mode and import a realm
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres-keycloak
+      DB_DATABASE: keycloak
+      DB_USER: admin
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+      ROOT_LOGLEVEL: DEBUG
+      JBOSS_LOG_MANAGER_ROOT_LOGGER: DEBUG, stdout, FILE
+
+    ports:
+      - "8059:8080"
+
+    volumes:
+      - ./realms/:/opt/keycloak/data/import #this is where the keycloak container looks to import realms
+    depends_on:
+      - postgres-keycloak
+    networks:
+      - spring
+
+
+  postgres-keycloak:
+    image: postgres
+    ports:
+      - "5431:5432"
+    container_name: podtgres-keycloak
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./data/keycloak:/var/lib/postgresql/data
+
+    networks:
+      - spring
+
+  #pgadmin:
+   # image: dpage/pgadmin4
+    #container_name: pgadmin-single
+    #ports:
+     # - "8888:80"
+  #3environment:
+      #- PGADMIN_DEFAULT_EMAIL=user@domain.com
+      #- PGADMIN_DEFAULT_PASSWORD=password
+
+    #networks:
+      #-spring:
+
+
+
+networks:
+  spring:
+    driver: bridge

@@ -1,11 +1,9 @@
-  #  1. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d
+  #  1. docker-compose-single.yml -p microservices-comp3095-ecommerce -f docker-compose-single.yml.yml up -d
     # -- This command will start the containers in detached mode without rebuilding the images (if they already exist)
 
-  #  2. docker-compose -p microservices-comp3095-ecommerce -f docker-compose.yml up -d --build
+  #  2. docker-compose-single.yml -p microservices-comp3095-ecommerce -f docker-compose-single.yml.yml up -d --build
   # -- This command forces the rebuild of images, even if the images already exist, before starting the containers
 
-
-version: '3.9'
 services:
 
   product-service:
@@ -29,6 +27,100 @@ services:
       - spring
 
     restart: unless-stopped
+
+
+  order-service:
+    image: order-service
+    container_name: order-service
+    ports:
+      - "8085:8085"
+    build:
+      context: ./order-service
+      dockerfile: ./Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/order-db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres-order:
+        condition: service_healthy
+    networks:
+      - spring
+    restart: unless-stopped
+
+  inventory-service:
+    image: inventory-service
+    container_name: inventory-service
+    ports:
+      - "8083:8083"
+    build:
+      context: ./inventory-service
+      dockerfile: ./Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/inventory-db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres-inventory:
+        condition: service_healthy
+    networks:
+      - spring
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8059/realms/spring-microservices-security-realm
+      - SERVER_PORT=9000
+      - SERVICES_PRODUCT_URL=http://product-service:8084
+      - SERVICES_ORDER_URL=http://order-service:8085
+    ports:
+      - "9000:9000"
+    networks:
+      - spring
+    depends_on:
+      - product-service
+      - order-service
+      - keycloak
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  keycloak:
+    container_name: keycloak
+    hostname: keycloak
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: [ "start-dev", "--import-realm" ] # to start in dev mode and import a realm
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres-keycloak
+      DB_DATABASE: keycloak
+      DB_USER: admin
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+      ROOT_LOGLEVEL: DEBUG
+      JBOSS_LOG_MANAGER_ROOT_LOGGER: DEBUG, stdout, FILE
+    ports:
+      - "8059:8080"
+    volumes:
+      - ./init/keycloak/realms:/opt/keycloak/data/import # updated to reflect the new path
+    depends_on:
+      - postgres-keycloak
+    networks:
+      - spring
+
+
 
   mongodb:
         image: mongo:latest
@@ -76,6 +168,72 @@ services:
             - spring
 
           restart: unless-stopped
+
+
+  postgres-order:
+    image: postgres
+    ports:
+      - "5433:5432"
+    container_name: postgres-order
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=order-db
+    volumes:
+      - ./data/postgres/order:/var/lib/postgresql/data
+      - ./init/order/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d order-db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spring
+
+
+  postgres-inventory:
+    image: postgres
+    ports:
+      - "5434:5432"
+    container_name: postgres-inventory
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=inventory-db
+    volumes:
+      - ./data/postgres/inventory:/var/lib/postgresql/data
+      - ./init/inventory/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U admin -d inventory-db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - spring
+
+  postgres-keycloak:
+    image: postgres
+    ports:
+      - "5431:5432"
+    container_name: podtgres-keycloak
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - ./data/keycloak:/var/lib/postgresql/data
+
+    networks:
+      - spring
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-comp3095
+    ports: #make sure the port is available
+      - "8888:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=password
 
 volumes:
   mongodb:

@@ -1,0 +1,26 @@
+version: '3.9'
+
+#define your services
+services:
+  #specify your image first
+  postgres:
+    image: postgres
+    ports: #make sure the port is available
+      - "5434:5432"
+    container_name: postgres-inventory
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=inventory-service
+    volumes:
+      - ./data/order:/var/lib/postgresql/data  #the mount (mapping) to a real location to a hard drive
+      - ./init/order/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin-multiple
+    ports: #make sure the port is available
+      - "8888:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.com
+      - PGADMIN_DEFAULT_PASSWORD=password
