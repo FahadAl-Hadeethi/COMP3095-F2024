@@ -88,7 +88,7 @@ public class Routes {
 
         return GatewayRouterFunctions.route("product_service_swagger")
                 .route(RequestPredicates.path("/aggregate/product-service/v3/api-docs"),
-                        HandlerFunctions.http("http://localhost:8084"))
+                        HandlerFunctions.http(productServiceUrl))
                 .filter(setPath("/api-docs"))
                 .build();
     }
@@ -98,7 +98,7 @@ public class Routes {
 
         return GatewayRouterFunctions.route("order_service_swagger")
                 .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
-                        HandlerFunctions.http("http://localhost:8085"))
+                        HandlerFunctions.http(orderServiceUrl))
                 .filter(setPath("/api-docs"))
                 .build();
     }
@@ -108,7 +108,7 @@ public class Routes {
 
         return GatewayRouterFunctions.route( "inventory_service_swagger")
                 .route(RequestPredicates.path("/aggregate/inventory-service/v3/api-docs"),
-                        HandlerFunctions.http("http://localhost:8083"))
+                        HandlerFunctions.http(inventoryServiceUrl))
                 .filter(setPath("/api-docs"))
                 .build();
     }
