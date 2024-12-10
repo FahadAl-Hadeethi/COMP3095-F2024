@@ -26,16 +26,16 @@ repositories {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.kafka:spring-kafka")
-	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0") // OpenAPI Documentation
-	implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.1.2") // Resilience4j for Circuit Breakers
-	implementation("org.springframework.kafka:spring-kafka:3.3.0") // Kafka Integration
-
+	implementation("org.springframework.kafka:spring-kafka:3.3.0")
+	implementation("org.springframework.boot:spring-boot-starter-mail")
 	compileOnly("org.projectlombok:lombok")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	annotationProcessor("org.projectlombok:lombok")
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.boot:spring-boot-testcontainers")
+	testImplementation("org.springframework.kafka:spring-kafka-test")
+	testImplementation("org.testcontainers:junit-jupiter")
+	testImplementation("org.testcontainers:kafka")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

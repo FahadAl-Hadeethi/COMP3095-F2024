@@ -254,12 +254,12 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
     healthcheck:
-      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      test: [ "CMD", "nc", "-z", "broker", "29092" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -275,6 +275,33 @@ services:
       KAFKA_CLUSTER_NAME: local
       KAFKA_CLUSTER_BOOTSTRAPSERVERS: broker:29092
       DYNAMIC_CONFIG_ENABLED: 'true'
+    depends_on:
+      - broker
+    networks:
+      - spring
+
+  notification-service:
+    container_name: notification-service
+    image: notification-service:latest
+    build:
+      context: ./notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8099:8099" # Expose Notification Service on port 8099
+    environment:
+      SPRING_APPLICATION_NAME: notification-service
+      SERVER_PORT: 8099
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:29092
+      SPRING_KAFKA_CONSUMER_GROUP_ID: notificationService
+      SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER: org.springframework.kafka.support.serializer.JsonDeserializer
+      SPRING_KAFKA_CONSUMER_PROPERTIES_JSON_TYPE_MAPPING: event:ca.gbc.notificationservice.event.OrderPlacedEvent
+      SPRING_KAFKA_CONSUMER_AUTO_OFFSET_RESET: earliest
+      SPRING_MAIL_HOST: sandbox.smtp.mailtrap.io
+      SPRING_MAIL_PORT: 2525
+      SPRING_MAIL_USERNAME: 5316ad6679d221
+      SPRING_MAIL_PASSWORD: 60452923036ca0
+      SPRING_PROFILES_ACTIVE: docker # Set active profile to 'docker'
     depends_on:
       - broker
     networks:
